@@ -1,0 +1,37 @@
+Jenkins Troubleshooting Guide
+
+Jenkins pipeline failure:
+
+A Jenkins pipeline can fail during checkout, build,
+test, Docker build, Docker push, or deployment.
+
+Git checkout failure:
+Common causes:
+1. Incorrect repository URL.
+2. Missing credentials.
+3. Incorrect branch.
+4. Network failure.
+5. Repository does not exist.
+
+Build failure:
+Check the Jenkins console output.
+
+Docker build failure:
+Check the Dockerfile and the complete Docker build output.
+
+Docker push failure:
+Common causes:
+1. Docker registry authentication failure.
+2. Incorrect image name.
+3. Incorrect registry credentials.
+4. Network failure.
+
+Kubernetes deployment failure:
+Check:
+1. kubectl get pods
+2. kubectl describe pod
+3. kubectl logs
+4. Kubernetes events.
+
+A Jenkins pipeline should fail fast when a required
+stage fails.

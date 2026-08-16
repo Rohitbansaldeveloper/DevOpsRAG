@@ -1,0 +1,28 @@
+services:
+
+  devopsrag-api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    container_name: devopsrag-api
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      LLM_MODEL: llama3.2
+      PROJECT_ROOT: /app
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - vectorstore_data:/app/vectorstore
+
+    restart: unless-stopped
+
+
+volumes:
+  vectorstore_data:

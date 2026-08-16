@@ -1,0 +1,45 @@
+Docker Troubleshooting Guide
+
+Container exits immediately:
+A Docker container may exit immediately when its main
+process finishes or crashes.
+
+Common causes:
+1. Incorrect CMD or ENTRYPOINT.
+2. Application crashes during startup.
+3. Missing environment variables.
+4. Missing configuration files.
+5. Incorrect command.
+6. Application is designed as a short-running process.
+
+Container restart:
+Check the container logs using:
+
+docker logs <container-name>
+
+Check the container status using:
+
+docker ps -a
+
+Inspect the container using:
+
+docker inspect <container-name>
+
+Exit code 137:
+Exit code 137 generally indicates that the container
+was killed because of memory pressure or an OOM condition.
+
+Image build failure:
+Common causes include:
+1. Incorrect Dockerfile syntax.
+2. Missing files.
+3. Incorrect base image.
+4. Package installation failure.
+5. Network problems during image build.
+
+Docker image troubleshooting should begin with:
+1. docker build output
+2. docker images
+3. docker ps -a
+4. docker logs
+5. docker inspect

@@ -1,0 +1,38 @@
+CI/CD Troubleshooting Guide
+
+Continuous Integration automatically builds and tests
+software whenever code changes are submitted.
+
+Continuous Deployment automatically deploys validated
+software to the target environment.
+
+Typical pipeline:
+
+GitHub
+   ↓
+Jenkins
+   ↓
+Checkout
+   ↓
+Build
+   ↓
+Unit Tests
+   ↓
+Docker Build
+   ↓
+Security Scan
+   ↓
+Docker Registry
+   ↓
+Kubernetes Deployment
+
+A failed pipeline should provide enough logs to identify
+the failed stage.
+
+Important pipeline information includes:
+1. Build number.
+2. Git commit.
+3. Failed stage.
+4. Error message.
+5. Build duration.
+6. Deployment status.

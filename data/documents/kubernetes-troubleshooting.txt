@@ -1,0 +1,41 @@
+Kubernetes Troubleshooting Guide
+
+CrashLoopBackOff:
+CrashLoopBackOff means that a Kubernetes container starts,
+crashes, and Kubernetes repeatedly attempts to restart it.
+
+Common causes include:
+1. Application crashes during startup.
+2. Incorrect environment variables.
+3. Missing configuration.
+4. Database connection failures.
+5. Incorrect application configuration.
+6. Insufficient memory.
+7. Incorrect container command.
+
+When troubleshooting CrashLoopBackOff, check:
+
+1. kubectl logs <pod-name>
+2. kubectl describe pod <pod-name>
+3. Kubernetes events.
+4. Container exit code.
+5. Application configuration.
+6. Environment variables.
+
+Exit code 137:
+Exit code 137 commonly indicates that the container was
+terminated because of memory pressure or an OOM kill.
+
+ImagePullBackOff:
+ImagePullBackOff occurs when Kubernetes cannot pull the
+container image.
+
+Common causes include:
+1. Incorrect image name.
+2. Incorrect image tag.
+3. Private registry authentication failure.
+4. Image does not exist in the registry.
+
+Deployment troubleshooting should begin by checking
+pod status, pod events, container logs, and deployment
+configuration.
