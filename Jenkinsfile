@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "devopsrag-api"
+        IMAGE_NAME = "rohitbansal2113/devopsrag-api"
         IMAGE_TAG = "${BUILD_NUMBER}"
         CONTAINER_NAME = "devopsrag-api"
         HOST_PORT = "8000"
@@ -125,6 +125,34 @@ pipeline {
                   '''
                 }
             }
+stage('Docker Login') {
+    steps {
+        echo 'Logging into Docker Hub...'
+
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'dockerhub-creds',
+                usernameVariable: 'DOCKER_USERNAME',
+                passwordVariable: 'DOCKER_PASSWORD'
+            )
+        ]) {
+            sh '''
+                echo "$DOCKER_PASSWORD" | docker login \
+                    -u "$DOCKER_USERNAME" \
+                    --password-stdin
+            '''
+        }
+    }
+}
+stage('Docker Push') {
+    steps {
+        echo 'Pushing Docker image to Docker Hub...'
+
+        sh """
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+        """
+    }
+}
     }
 
     post {
