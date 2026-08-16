@@ -1,3 +1,4 @@
+
 pipeline {
 
     agent any
@@ -56,10 +57,7 @@ pipeline {
                 echo 'Building Docker image...'
 
                 sh """
-                    docker build \
-                        -f backend/Dockerfile \
-                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                        .
+                    docker build -f backend/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 """
             }
         }
@@ -80,15 +78,7 @@ pipeline {
                 echo 'Starting new DevOpsRAG container...'
 
                 sh """
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p ${HOST_PORT}:${CONTAINER_PORT} \
-                        -v devopsrag_vectorstore:/app/vectorstore \  
-                        -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
-                        -e LLM_MODEL=llama3.2 \
-                        -e PROJECT_ROOT=/app \
-                        --add-host=host.docker.internal:host-gateway \
-                        ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} -v devopsrag_vectorstore:/app/vectorstore -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e LLM_MODEL=llama3.2 -e PROJECT_ROOT=/app --add-host=host.docker.internal:host-gateway ${IMAGE_NAME}:${IMAGE_TAG}
                 """
             }
         }
@@ -96,73 +86,77 @@ pipeline {
         stage('Container Test') {
             steps {
                 echo 'Testing running container...'
-  
+
                 sh '''
-                     echo "Checking container status..."
-                     docker ps
+                    echo "Checking container status..."
+                    docker ps
 
-                     echo "Waiting for FastAPI..."
+                    echo "Waiting for FastAPI..."
 
-                     for i in $(seq 1 12)
-                     do
-                         echo "Health check attempt $i..."
- 
-                         if curl -fsS http://127.0.0.1:8000/health; then
+                    for i in $(seq 1 12)
+                    do
+                        echo "Health check attempt $i..."
+
+                        if curl -fsS http://127.0.0.1:8000/health; then
                             echo ""
                             echo "DevOpsRAG API is healthy!"
                             exit 0
-                         fi
+                        fi
 
-                         echo "API not ready yet. Waiting 5 seconds..."
-                         sleep 5
-                     done
+                        echo "API not ready yet. Waiting 5 seconds..."
+                        sleep 5
+                    done
 
-                     echo "ERROR: DevOpsRAG API did not become healthy."
-                     echo "Container logs:"
-                     docker logs devopsrag-api
+                    echo "ERROR: DevOpsRAG API did not become healthy."
 
-                     exit 1
-                  '''
+                    echo "Container logs:"
+                    docker logs devopsrag-api
+
+                    exit 1
+                '''
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                echo 'Logging into Docker Hub...'
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            --username "$DOCKER_USERNAME" \
+                            --password-stdin
+                    '''
                 }
             }
-stage('Docker Login') {
-    steps {
-        echo 'Logging into Docker Hub...'
-
-        withCredentials([
-            usernamePassword(
-                credentialsId: 'dockerhub-creds',
-                usernameVariable: 'DOCKER_USERNAME',
-                passwordVariable: 'DOCKER_PASSWORD'
-            )
-        ]) {
-            sh '''
-                echo "$DOCKER_PASSWORD" | docker login \
-                    -u "$DOCKER_USERNAME" \
-                    --password-stdin
-            '''
         }
-    }
-}
-stage('Docker Push') {
-    steps {
-        echo 'Pushing Docker image to Docker Hub...'
 
-        sh """
-            docker push ${IMAGE_NAME}:${IMAGE_TAG}
-        """
-    }
-}
+        stage('Docker Push') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+
+                sh """
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+        }
     }
 
     post {
 
         success {
             echo 'DevOpsRAG CI/CD pipeline completed successfully!'
+            echo "Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-            echo 'DevOpsRAG pipeline failed!'
+            echo 'DevOpsRAG CI/CD pipeline failed!'
         }
 
         always {
