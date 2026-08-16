@@ -147,7 +147,40 @@ pipeline {
             }
         }
     }
+        stage('Deploy to Kubernetes') {
+             steps {
+                 echo "Deploying ${IMAGE_NAME}:${IMAGE_TAG} to Kubernetes..."
 
+                 sh '''
+                      kubectl apply -f k8s/namespace.yaml
+                      kubectl set image deployment/devopsrag-api \
+                        devopsrag-api=${IMAGE_NAME}:${IMAGE_TAG} \
+                         -n devopsrag
+                      kubectl apply -f k8s/service.yaml
+                 '''
+           }
+       }
+         stage('Verify Kubernetes Deployment') {
+             steps {
+                 echo 'Waiting for Kubernetes rollout...'
+
+                 sh '''
+                     kubectl rollout status deployment/devopsrag-api \
+                         -n devopsrag \
+                         --timeout=180s
+
+                     echo "Pods:"
+                     kubectl get pods -n devopsrag
+
+                     echo "Deployment:"
+                     kubectl get deployment devopsrag-api -n devopsrag
+
+                     echo "Service:"
+                     kubectl get service devopsrag-service -n devopsrag
+
+                 '''
+           }
+       }  
     post {
 
         success {
