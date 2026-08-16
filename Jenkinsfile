@@ -153,10 +153,11 @@ pipeline {
 
                  sh '''
                       kubectl apply -f k8s/namespace.yaml
+                      kubectl apply -f k8s/deployment.yaml
+                      kubectl apply -f k8s/service.yaml
                       kubectl set image deployment/devopsrag-api \
                         devopsrag-api=${IMAGE_NAME}:${IMAGE_TAG} \
                          -n devopsrag
-                      kubectl apply -f k8s/service.yaml
                  '''
            }
        }
