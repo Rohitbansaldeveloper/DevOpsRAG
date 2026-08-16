@@ -83,6 +83,7 @@ pipeline {
                     docker run -d \
                         --name ${CONTAINER_NAME} \
                         -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        -v devopsrag_vectorstore:/app/vectorstore \  
                         -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
                         -e LLM_MODEL=llama3.2 \
                         -e PROJECT_ROOT=/app \
