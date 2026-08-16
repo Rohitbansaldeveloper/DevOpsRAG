@@ -5,6 +5,9 @@ pipeline {
     environment {
         IMAGE_NAME = "devopsrag-api"
         IMAGE_TAG = "${BUILD_NUMBER}"
+        CONTAINER_NAME = "devopsrag-api"
+        HOST_PORT = "8000"
+        CONTAINER_PORT = "8000"
     }
 
     stages {
@@ -29,6 +32,9 @@ pipeline {
 
                     echo "Backend:"
                     ls -la backend
+
+                    echo "RAG files:"
+                    ls -la backend/app/rag
                 '''
             }
         }
@@ -40,6 +46,7 @@ pipeline {
                 sh '''
                     python3 --version
                     python3 -m py_compile backend/app/main.py
+                    python3 -m py_compile backend/app/rag/*.py
                 '''
             }
         }
@@ -57,13 +64,45 @@ pipeline {
             }
         }
 
-        stage('Docker Image Test') {
+        stage('Stop Old Container') {
             steps {
-                echo 'Checking Docker image...'
+                echo 'Stopping old container if it exists...'
 
                 sh """
-                    docker images ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
                 """
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                echo 'Starting new DevOpsRAG container...'
+
+                sh """
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+                        -e LLM_MODEL=llama3.2 \
+                        -e PROJECT_ROOT=/app \
+                        --add-host=host.docker.internal:host-gateway \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Container Test') {
+            steps {
+                echo 'Testing running container...'
+
+                sh '''
+                    sleep 10
+
+                    docker ps
+
+                    curl -f http://127.0.0.1:8000/health
+                '''
             }
         }
     }
@@ -71,15 +110,23 @@ pipeline {
     post {
 
         success {
-            echo 'DevOpsRAG CI pipeline completed successfully!'
+            echo 'DevOpsRAG CI/CD pipeline completed successfully!'
         }
 
         failure {
-            echo 'DevOpsRAG CI pipeline failed!'
+            echo 'DevOpsRAG pipeline failed!'
         }
 
         always {
             echo 'Pipeline finished.'
+
+            sh '''
+                echo "Docker containers:"
+                docker ps -a
+
+                echo "DevOpsRAG logs:"
+                docker logs devopsrag-api 2>/dev/null || true
+            '''
         }
     }
 }
