@@ -95,16 +95,35 @@ pipeline {
         stage('Container Test') {
             steps {
                 echo 'Testing running container...'
-
+  
                 sh '''
-                    sleep 10
+                     echo "Checking container status..."
+                     docker ps
 
-                    docker ps
+                     echo "Waiting for FastAPI..."
 
-                    curl -f http://127.0.0.1:8000/health
-                '''
+                     for i in $(seq 1 12)
+                     do
+                         echo "Health check attempt $i..."
+ 
+                         if curl -fsS http://127.0.0.1:8000/health; then
+                            echo ""
+                            echo "DevOpsRAG API is healthy!"
+                            exit 0
+                         fi
+
+                         echo "API not ready yet. Waiting 5 seconds..."
+                         sleep 5
+                     done
+
+                     echo "ERROR: DevOpsRAG API did not become healthy."
+                     echo "Container logs:"
+                     docker logs devopsrag-api
+
+                     exit 1
+                  '''
+                }
             }
-        }
     }
 
     post {
