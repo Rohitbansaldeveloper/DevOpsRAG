@@ -1,4 +1,3 @@
-
 pipeline {
 
     agent any
@@ -57,7 +56,8 @@ pipeline {
                 echo 'Building Docker image...'
 
                 sh """
-                    docker build -f backend/Dockerfile -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker build -f backend/Dockerfile \
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 """
             }
         }
@@ -78,7 +78,15 @@ pipeline {
                 echo 'Starting new DevOpsRAG container...'
 
                 sh """
-                    docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} -v devopsrag_vectorstore:/app/vectorstore -e OLLAMA_BASE_URL=http://host.docker.internal:11434 -e LLM_MODEL=llama3.2 -e PROJECT_ROOT=/app --add-host=host.docker.internal:host-gateway ${IMAGE_NAME}:${IMAGE_TAG}
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        -v devopsrag_vectorstore:/app/vectorstore \
+                        -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+                        -e LLM_MODEL=llama3.2 \
+                        -e PROJECT_ROOT=/app \
+                        --add-host=host.docker.internal:host-gateway \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
                 """
             }
         }
@@ -146,42 +154,45 @@ pipeline {
                 """
             }
         }
-    }
+
         stage('Deploy to Kubernetes') {
-             steps {
-                 echo "Deploying ${IMAGE_NAME}:${IMAGE_TAG} to Kubernetes..."
+            steps {
+                echo "Deploying ${IMAGE_NAME}:${IMAGE_TAG} to Kubernetes..."
 
-                 sh '''
-                      kubectl apply -f k8s/namespace.yaml
-                      kubectl apply -f k8s/deployment.yaml
-                      kubectl apply -f k8s/service.yaml
-                      kubectl set image deployment/devopsrag-api \
+                sh """
+                    kubectl apply -f k8s/namespace.yaml
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+
+                    kubectl set image deployment/devopsrag-api \
                         devopsrag-api=${IMAGE_NAME}:${IMAGE_TAG} \
-                         -n devopsrag
-                 '''
-           }
-       }
-         stage('Verify Kubernetes Deployment') {
-             steps {
-                 echo 'Waiting for Kubernetes rollout...'
+                        -n devopsrag
+                """
+            }
+        }
 
-                 sh '''
-                     kubectl rollout status deployment/devopsrag-api \
-                         -n devopsrag \
-                         --timeout=180s
+        stage('Verify Kubernetes Deployment') {
+            steps {
+                echo 'Waiting for Kubernetes rollout...'
 
-                     echo "Pods:"
-                     kubectl get pods -n devopsrag
+                sh '''
+                    kubectl rollout status deployment/devopsrag-api \
+                        -n devopsrag \
+                        --timeout=180s
 
-                     echo "Deployment:"
-                     kubectl get deployment devopsrag-api -n devopsrag
+                    echo "Pods:"
+                    kubectl get pods -n devopsrag
 
-                     echo "Service:"
-                     kubectl get service devopsrag-service -n devopsrag
+                    echo "Deployment:"
+                    kubectl get deployment devopsrag-api -n devopsrag
 
-                 '''
-           }
-       }  
+                    echo "Service:"
+                    kubectl get service devopsrag-service -n devopsrag
+                '''
+            }
+        }
+    }
+
     post {
 
         success {
